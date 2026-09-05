@@ -1,464 +1,183 @@
+# Embedded Systems Portfolio
 
-# Smart Assistive Glasses
+> Collection of embedded systems, IoT, and robotics projects built during my engineering journey.
 
-> An ESP32-based assistive smart eyewear prototype for obstacle proximity awareness, predictive fall detection, haptic feedback, and remote emergency notification.
-
-## Overview
-
-Smart Assistive Glasses is a wearable safety system designed to improve environmental awareness and personal safety for visually impaired users.
-
-The prototype combines **distance sensing, inertial sensing, haptic feedback, audible alerts, and wireless communication** inside a compact eyewear-oriented platform.
-
-The current implementation focuses on two primary functions:
-
-* **Real-time obstacle proximity detection**
-* **Predictive and confirmed fall detection**
-
-When a nearby obstacle is detected, the system increases vibration intensity as the obstacle approaches. The inertial subsystem continuously monitors acceleration and angular velocity to identify motion patterns associated with a possible fall. A pre-fall state is triggered by free-fall-like acceleration or a sudden rotational spike, followed by impact confirmation.
-
-Critical events can be reported remotely through Telegram over Wi-Fi.
+This repository serves as an index of my embedded projects developed using ESP32, ESP8266, Arduino, sensors, wireless communication, robotics, and real-time embedded programming.
 
 ---
 
-## Current Prototype
+# Projects
 
-```text
-                 ┌─────────────────┐
-                 │      ESP32      │
-                 │  Dual-Core MCU  │
-                 └────────┬────────┘
-                          │
-             ┌────────────┼────────────┐
-             │            │            │
-             ▼            ▼            ▼
-        TFmini LiDAR   MPU6050      Wi-Fi
-        Distance       IMU           │
-             │            │           ▼
-             │            │       Telegram
-             │            │
-             └─────┬──────┘
-                   │
-                   ▼
-             Decision Logic
-                   │
-          ┌────────┴─────────┐
-          ▼                  ▼
-    Vibration Motor        Buzzer
-```
+## Smart Assistive Glasses
 
-## Features
+An ESP32-based assistive smart eyewear prototype for **obstacle proximity awareness, predictive fall detection, haptic feedback, audible alerts, and remote emergency notification**.
 
-### Obstacle Proximity Feedback
+The implementation combines a TFmini distance sensor, MPU6050 IMU, ESP32, vibration feedback, buzzer output, Wi-Fi, and asynchronous Telegram communication.
 
-The TFmini distance sensor continuously measures the distance to objects.
+### Features
 
-The current implementation:
+- Real-time obstacle proximity detection
+- TFmini UART distance sensing
+- Progressive vibration feedback based on obstacle distance
+- MPU6050 accelerometer + gyroscope monitoring
+- Predictive pre-fall detection
+- Impact-based fall confirmation
+- Audible emergency indication
+- Telegram emergency notifications over Wi-Fi
+- Non-blocking asynchronous Telegram task
+- Wi-Fi reconnection handling
+- FreeRTOS-based task separation
 
-* Reads the TFmini over UART
-* Validates distance and signal strength
-* Maintains the latest valid distance reading
-* Provides continuous proximity feedback
-* Increases vibration intensity as an obstacle approaches
-* Generates a Telegram alert when an obstacle enters the critical range
+### Repository
 
-Current vibration range:
+This repository contains the current prototype implementation:
 
-```text
-> 200 cm     → vibration OFF
+`smart_glasses_async.ino`
 
-200–20 cm    → progressively increasing vibration
-
-< 25 cm      → critical obstacle alert
-```
+> **Patent note:** The associated patent specification describes a broader smart assistive eyewear architecture including sensor fusion, multi-tier hazard classification, adaptive haptic feedback, GPS-assisted emergency communication, community hazard mapping, and gesture recognition. The code in this repository is a prototype and does not necessarily implement every element described or claimed in the patent specification. fileciteturn43file0
 
 ---
 
-## Predictive Fall Detection
+## Autonomous Rover
 
-Unlike a simple impact detector, the prototype uses a small state machine:
+An autonomous robotics platform built around **ESP32**, **ESP32-CAM**, and **TFmini LiDAR**, capable of both manual and autonomous navigation through a browser-based dashboard.
 
-```text
-             NORMAL
-                │
-       free-fall / gyro spike
-                │
-                ▼
-            PRE-FALL
-                │
-          ┌─────┴─────┐
-          │           │
-       impact       timeout
-          │           │
-          ▼           ▼
-       CONFIRMED     NORMAL
-          │
-          ▼
-       Alert + Buzzer
-```
+### Features
 
-### Pre-Fall Detection
+- TFmini LiDAR-based obstacle detection
+- ESP32-CAM live video streaming
+- Browser dashboard for remote control
+- Manual directional controls
+- Mobile gyroscope steering
+- Autonomous obstacle avoidance mode
+- Real-time Wi-Fi operation
 
-The system looks for:
+**Repository:**
 
-* Reduced acceleration magnitude resembling free fall
-* Sudden rotational movement
-* Abnormal inertial behavior
-
-The current implementation uses:
-
-```text
-Free-fall threshold  = 0.50 g
-Gyroscope threshold  = 200 deg/s
-Pre-fall window      = 800 ms
-Impact threshold     = 2.10 g
-```
-
-The thresholds are configurable in the source code.
-
-### Impact Confirmation
-
-A pre-fall event does not immediately classify the event as a confirmed fall.
-
-The system waits for an impact signature within the configured window.
-
-This reduces false triggers caused by movements such as:
-
-* rapid sitting
-* sudden head movement
-* jumping
-* other transient motion
+https://github.com/Jvkrog/Autonomous-Rover
 
 ---
 
-## Emergency Notification
+## Smart Wrist Band
 
-When a fall is confirmed, the system creates a Telegram message containing:
+A wearable safety and monitoring system designed around motion sensing and real-time emergency notifications.
 
-* Fall detection status
-* Pre-fall → impact confirmation
-* Estimated predictive lead time
-* Buzzer status
+### Features
 
-The message is placed into an asynchronous queue instead of being sent directly from the sensor loop.
+- MPU6050 motion sensing
+- Fall detection
+- Emergency alert mechanism
+- Blynk dashboard integration
+- Telegram notifications
+- Embedded real-time monitoring
 
----
+**Repository:**
 
-## Asynchronous Communication Architecture
-
-One important implementation detail is that HTTPS/Telegram communication can take significantly longer than the sensor sampling interval.
-
-Instead of blocking the sensing loop:
-
-```text
-Sensor Loop
-     │
-     ├── Read distance
-     ├── Read IMU
-     ├── Fall detection
-     └── Haptic control
-              │
-              ▼
-        Telegram Queue
-              │
-              ▼
-       Telegram Task
-              │
-              ▼
-          Telegram
-```
-
-The Telegram task runs independently using the ESP32's FreeRTOS capabilities.
-
-This allows the sensing/control loop to continue operating while network communication takes place.
-
-### Queue Protection
-
-The Telegram queue has a finite capacity.
-
-When the queue is full, the oldest queued message is discarded before inserting the latest event.
-
-This prevents communication congestion from blocking the safety-critical sensing loop.
+https://github.com/Jvkrog/Smart-Wrist-Band
 
 ---
 
-## Wi-Fi Recovery
+## FireBot
 
-The system also performs background Wi-Fi reconnection.
+An IoT-enabled autonomous fire detection and monitoring system focused on early hazard detection and remote alerting.
 
-If the connection is lost:
+### Features
 
-```text
-Wi-Fi disconnected
-       ↓
-5-second retry interval
-       ↓
-WiFi reconnect attempt
-       ↓
-Connection restored
-```
+- Fire detection sensors
+- Real-time monitoring
+- Wireless notifications
+- Embedded safety system
+- IoT-based architecture
 
-Sensor processing continues while reconnection attempts occur.
+**Repository:**
+
+https://github.com/Jvkrog/FireBot
 
 ---
 
-## Hardware
+## Esp32Cam-Rover (ESP32 Rover)
 
-The current prototype uses:
+A browser-controlled robotic rover powered by ESP32 with wireless navigation and live video streaming capabilities.
 
-| Component              | Purpose                                    |
-| ---------------------- | ------------------------------------------ |
-| ESP32                  | Main processing and wireless communication |
-| TFmini distance sensor | Obstacle ranging                           |
-| MPU6050                | Acceleration and gyroscope sensing         |
-| Vibration motor        | Haptic proximity feedback                  |
-| Piezo buzzer           | Fall/emergency audible alert               |
-| LiPo battery           | Portable power                             |
-| Wi-Fi                  | Remote communication                       |
+### Features
 
-The broader invention architecture described in the patent includes additional elements such as GPS, adaptive hazard classification, multi-channel emergency communication, community hazard mapping, and gesture recognition. These are **not necessarily represented in the current repository implementation**. 
+- ESP32-CAM live video streaming
+- Wi-Fi browser control
+- L298N motor driver
+- Real-time wireless navigation
+- Embedded web interface
 
----
+**Repository:**
 
-## Software Architecture
-
-The firmware is organized around a non-blocking real-time loop.
-
-```text
-setup()
- │
- ├── Initialize Serial
- ├── Initialize TFmini
- ├── Initialize MPU6050
- ├── Configure vibration/buzzer
- ├── Connect Wi-Fi
- ├── Start Telegram task
- └── Send startup notification
-```
-
-Runtime:
-
-```text
-loop()
- │
- ├── Maintain Wi-Fi
- │
- └── Every ~20 ms
-       │
-       ├── Read TFmini
-       ├── Control vibration
-       ├── Check fall state
-       └── Handle alerts
-```
-
-The current sensor/control loop targets approximately **20 ms scheduling**, while Telegram communication is handled separately.
+https://github.com/Jvkrog/Esp32Cam-Rover
 
 ---
 
-## Fall State Machine
+# Technologies
 
-The firmware implements three states:
+### Microcontrollers
 
-```text
-FALL_NORMAL
-     │
-     │ free-fall / gyro spike
-     ▼
-FALL_PRE
-     │
-     ├── impact detected ──────► FALL_CONFIRMED
-     │
-     └── timeout ──────────────► FALL_NORMAL
-                                     
-FALL_CONFIRMED
-     │
-     │ 5 seconds
-     ▼
-FALL_NORMAL
-```
+- ESP32
+- ESP32-CAM
+- ESP8266
+- Arduino Nano
 
-This separates:
+### Sensors
 
-1. Normal motion
-2. Potential fall
-3. Confirmed fall
+- MPU6050
+- TFmini LiDAR / distance sensing
+- DHT11
+- Flame sensors
+- Ultrasonic sensors
 
-rather than treating every sudden movement as a fall.
+### Communication
 
----
+- Wi-Fi
+- HTTP
+- Telegram Bot API
+- Blynk
+- UART
+- I²C
 
-## Repository Structure
+### Programming
 
-```text
-.
-├── smart_glasses_async.ino
-└── README.md
-```
-
-The primary firmware is contained in:
-
-```text
-smart_glasses_async.ino
-```
+- Arduino C/C++
+- Embedded firmware
+- Real-time programming
+- FreeRTOS tasks
+- Sensor integration
+- Motor control
+- Wireless communication
 
 ---
 
-## Getting Started
+# Engineering Focus
 
-### Requirements
+These projects helped build practical experience in:
 
-* ESP32 development board
-* Arduino IDE / compatible ESP32 environment
-* MPU6050 library
-* UniversalTelegramBot library
-* ESP32 Wi-Fi support
-* TFmini-compatible UART distance sensor
-
-### Libraries
-
-```cpp
-#include <Wire.h>
-#include <MPU6050.h>
-#include <WiFi.h>
-#include <WiFiClientSecure.h>
-#include <UniversalTelegramBot.h>
-```
-
-### Hardware Connections
-
-The current firmware uses:
-
-```text
-MPU6050
-SDA/SCL → ESP32 I²C
-
-TFmini
-TX/RX → ESP32 UART2
-
-Vibration Motor
-GPIO 25
-
-Buzzer
-GPIO 26
-```
-
-The exact wiring should be adapted to the ESP32 board and hardware revision being used.
+- Embedded firmware development
+- Real-time embedded systems
+- Sensor integration and fusion
+- IoT system design
+- Wireless communication
+- Robotics and autonomous navigation
+- Haptic and actuator control
+- Remote monitoring and alerting
+- Hardware-software integration
+- Rapid prototyping
 
 ---
 
-## Configuration
+# Current Focus
 
-Before flashing the firmware, configure:
+My current engineering work has expanded from embedded systems into **backend engineering and autonomous trading infrastructure through TAlgo-X**.
 
-```cpp
-const char* ssid = "...";
-const char* password = "...";
-
-#define BOT_TOKEN "..."
-#define CHAT_ID   "..."
-```
-
-For a public repository, **do not commit real Wi-Fi credentials, Telegram bot tokens, API keys, or other secrets.**
-
-Use placeholders or move credentials to a separate configuration mechanism.
+These projects represent the embedded-systems foundation behind that progression, covering low-level hardware interaction, real-time sensing, wireless systems, robotics, and safety-oriented control logic.
 
 ---
 
-## Current Limitations
+# Author
 
-This repository represents a **working prototype**, not necessarily the complete implementation described in the associated patent specification.
+**Vamshi Krishna**
 
-Current firmware limitations include:
-
-* TFmini-based ranging rather than the patent's specified solid-state LiDAR embodiment
-* Single distance measurement path in the current code
-* No full multi-sector obstacle classification
-* No GPS implementation in the current firmware
-* Telegram is currently the implemented remote alert channel
-* No community hazard heatmap implementation
-* No gesture-recognition implementation
-* No machine-learning object classification
-* Fall prediction is threshold/state-machine based rather than ML-based
-* Current obstacle feedback is primarily distance-based
-
-The patent specification describes a broader system architecture incorporating sensor fusion, hazard categorisation, adaptive feedback, predictive fall-risk processing, GPS-based emergency notification, community hazard mapping, and gesture-based interaction. 
-
----
-
-## Development Roadmap
-
-### Phase 1 — Current Prototype
-
-* [x] ESP32 control
-* [x] Distance sensing
-* [x] MPU6050 motion sensing
-* [x] Proximity vibration feedback
-* [x] Buzzer alerts
-* [x] Predictive pre-fall state
-* [x] Impact confirmation
-* [x] Wi-Fi connectivity
-* [x] Telegram notification
-* [x] Asynchronous Telegram task
-* [x] Wi-Fi reconnection
-
-### Phase 2 — Assistive Intelligence
-
-* [ ] Multi-zone obstacle detection
-* [ ] Hazard classification
-* [ ] Direction-aware haptic feedback
-* [ ] Adaptive vibration patterns
-* [ ] Improved fall-risk classification
-* [ ] GPS integration
-* [ ] Multi-channel emergency communication
-
-### Phase 3 — Intelligent Navigation
-
-* [ ] Community hazard mapping
-* [ ] Trust-weighted hazard reports
-* [ ] Gesture recognition
-* [ ] Context-aware command interpretation
-* [ ] Mobile companion application
-* [ ] Environmental/object recognition
-
-The proposed later-stage functions correspond to extensions described in the patent specification. 
-
----
-
-## Patent Context
-
-This repository contains a **prototype implementation associated with a broader smart assistive eyewear invention**.
-
-The patent specification describes an intelligent assistive eyewear system combining:
-
-* distance sensing
-* six-axis inertial sensing
-* sensor fusion
-* hazard classification
-* adaptive haptic feedback
-* predictive fall detection
-* autonomous emergency communication
-* GPS location
-* community hazard mapping
-* gesture recognition
-
-The patent's claimed architecture is broader than the functionality currently implemented in this repository. 
-
-Therefore, **the repository should be considered an implementation/prototyping component rather than a one-to-one representation of every patent claim.**
-
----
-
-## Disclaimer
-
-This project is an engineering prototype intended for research, development, and assistive-technology experimentation.
-
-It should **not be considered a replacement for established mobility aids, professional assistance, or emergency systems** without appropriate validation and safety testing.
-
-Fall detection and obstacle detection systems can produce false positives and false negatives. Real-world deployment requires extensive testing across different users, environments, lighting conditions, motion patterns, and hardware configurations.
-
----
-
-## License
-
-```text
-Copyright © 2026
-```
-
+GitHub: https://github.com/Jvkrog
