@@ -1,4 +1,3 @@
----
 
 # Smart Assistive Glasses
 
