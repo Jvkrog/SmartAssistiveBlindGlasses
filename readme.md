@@ -442,9 +442,27 @@ The patent specification describes an intelligent assistive eyewear system combi
 
 The patent's claimed architecture is broader than the functionality currently implemented in this repository. 
 
+
+
 Therefore, **the repository should be considered an implementation/prototyping component rather than a one-to-one representation of every patent claim.**
 
 ---
+---
+
+
+## 📜 Patent Published
+
+**Indian Patent Application:** IN202641109639
+
+**Title:** *Wearable Eyewear-Based Assistive Navigation System with Multi-Sensor Hazard Detection, Adaptive Haptic Feedback, and Autonomous Emergency Alerting for Visually Impaired Users*
+
+**Status:** Published
+
+**Publication Date:** 18 September 2026
+
+
+---
+
 
 ## Disclaimer
 
