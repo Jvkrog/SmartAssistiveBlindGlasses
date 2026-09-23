@@ -447,10 +447,10 @@ The patent's claimed architecture is broader than the functionality currently im
 Therefore, **the repository should be considered an implementation/prototyping component rather than a one-to-one representation of every patent claim.**
 
 ---
----
 
 
-## 📜 Patent Published
+
+##  Patent Published
 
 **Indian Patent Application:** IN202641109639
 
